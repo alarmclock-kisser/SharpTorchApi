@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="SharpTorch.Api/SharpTorch.Api.csproj" />
+  <Project Path="SharpTorch.Client/SharpTorch.Client.csproj" Id="d227cacf-1664-450d-8609-6a9914b4b5b3" />
+  <Project Path="SharpTorch.Runtime/SharpTorch.Runtime.csproj" />
+  <Project Path="SharpTorch.WebApp/SharpTorch.WebApp.csproj" Id="3a9d7ac9-98f6-473c-8e4b-f422e9ab39b2" />
+  <Project Path="TorchSharp.Shared/TorchSharp.Shared.csproj" />
+</Solution>

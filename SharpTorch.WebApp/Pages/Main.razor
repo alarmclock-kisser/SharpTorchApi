@@ -1,0 +1,67 @@
+﻿@page "/"
+@page "/main"
+@using Microsoft.JSInterop
+@using Radzen
+@using Radzen.Blazor
+@using SharpTorch.WebApp.ViewModels
+@using System.Linq
+@inject MainViewModel Vm
+@inject IJSRuntime JS
+
+<RadzenCard Style="margin:20px;">
+    <ChildContent>
+        <RadzenHeading Size="H1" Text="SharpTorch Control" />
+
+        <RadzenRow>
+            <RadzenColumn Size="6">
+                <RadzenPanel Style="padding:10px;">
+                    <RadzenHeading Size="H3" Text="Status" />
+                    <div>
+                        <b>Device:</b> @Vm.DeviceName ?? "(unknown)"<br />
+                        <b>Device Count:</b> @(Vm.DeviceCount?.ToString() ?? "?")<br />
+                        <b>Active Model:</b> @(Vm.ActiveModel?.ModelName ?? "(none)")
+                    </div>
+                    <RadzenButton Text="Refresh" Click="@(async args => await Vm.RefreshAsync())" Style="margin-top:10px;" />
+                </RadzenPanel>
+            </RadzenColumn>
+
+            <RadzenColumn Size="6">
+                <RadzenPanel Style="padding:10px;">
+                    <RadzenHeading Size="H3" Text="Models" />
+                    <RadzenDropDown @bind-Value="Vm.SelectedModel" Data="Vm.Models" TextProperty="ModelName" ValueProperty="ModelName" Style="width:100%"/>
+                    <RadzenButton Text="Load" Click="@(async args => await Vm.LoadModelAsync(Vm.SelectedModel))" Style="margin-top:10px;" />
+                </RadzenPanel>
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenHeading Size="H3" Text="Generate" />
+        <RadzenTextArea @bind-Value="_prompt" Style="width:100%" Rows="4" />
+        <RadzenButton Text="Generate Stream" Click="@(async args => await StartGeneration())" Style="margin-top:10px;" />
+
+        <RadzenCard Style="margin-top:10px;">
+            <ChildContent>
+                <div style="white-space:pre-wrap;">@_generated</div>
+            </ChildContent>
+        </RadzenCard>
+    </ChildContent>
+</RadzenCard>
+
+@code {
+    private string? _prompt = "Hello world";
+    private string _generated = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Vm.InitializeAsync();
+    }
+
+    private async Task StartGeneration()
+    {
+        _generated = string.Empty;
+        await foreach (var chunk in Vm.GenerateStreamAsync(_prompt, 128))
+        {
+            _generated += chunk;
+            StateHasChanged();
+        }
+    }
+}

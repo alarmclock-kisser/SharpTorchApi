@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "both (https)",
+    "Projects": [
+      {
+        "Path": "SharpTorch.Api\\SharpTorch.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "SharpTorch.WebApp\\SharpTorch.WebApp.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  }
+]
