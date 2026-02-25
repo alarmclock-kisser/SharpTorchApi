@@ -145,16 +145,94 @@ namespace SharpTorch.Runtime
             }
             try
             {
-                await StaticLogger.LogAsync("TorchService: Unloading active model...");
-                // Dispose the model to free resources
-                this.ActiveModel.Dispose();
+                await StaticLogger.LogAsync("TorchService: Unloading active model (aggressive cleanup)...");
+
+                // 1) Try to dispose tensors that belong to the model (parameters + buffers)
+                try
+                {
+                    var model = this.ActiveModel;
+                    if (model != null)
+                    {
+                        try
+                        {
+                            // Dispose parameters
+                            var pars = model.parameters();
+                            if (pars != null)
+                            {
+                                foreach (var p in pars)
+                                {
+                                    try { p.Dispose(); } catch { }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            StaticLogger.Log(ex);
+                        }
+
+                        try
+                        {
+                            // Dispose buffers
+                            var bufs = model.buffers();
+                            if (bufs != null)
+                            {
+                                foreach (var b in bufs)
+                                {
+                                    try { b.Dispose(); } catch { }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            StaticLogger.Log(ex);
+                        }
+
+                        // Finally dispose the module itself
+                        try { model.Dispose(); } catch (Exception ex) { StaticLogger.Log(ex); }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log and continue with best-effort cleanup
+                    await StaticLogger.LogAsync(ex);
+                }
+
+                // 2) Clear references to DTOs/configs/tokenizer so they become collectible
                 this.ActiveModel = null;
                 this.ActiveModelDto = null;
-                // Clear the tokenizer reference
+
+                // Tokenizer may not implement IDisposable in all builds — just clear the reference
                 this._tokenizer = null;
-                // Force garbage collection to clean up any remaining resources
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
+
+                try { this.ModelConfig?.Dispose(); } catch { }
+                this.ModelConfig = null;
+                try { this.GenerationConfig?.Dispose(); } catch { }
+                this.GenerationConfig = null;
+                try { this.ChatTemplate?.Dispose(); } catch { }
+                this.ChatTemplate = null;
+
+                // 3) If CUDA is available, try to synchronize and clear caches
+                try
+                {
+                    if (cuda.is_available())
+                    {
+                        cuda.synchronize();
+                        await StaticLogger.LogAsync("TorchService: CUDA synchronized.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await StaticLogger.LogAsync(ex);
+                }
+
+                // 4) Force multiple GC cycles and wait for finalizers to run
+                for (int i = 0; i < 3; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    await Task.Delay(50);
+                }
+
                 await StaticLogger.LogAsync("TorchService: Model unloaded successfully.");
                 return true;
             }

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using TorchSharp.Shared.Torch;
+using System.Runtime.CompilerServices;
 
 namespace SharpTorch.WebApp.ViewModels
 {
@@ -27,6 +28,9 @@ namespace SharpTorch.WebApp.ViewModels
 
         public int? DeviceCount { get; private set; }
         public string? DeviceName { get; private set; }
+
+        public string LoadButtonText => this.ActiveModel != null ? $"Unload" : "Load";
+        public bool IsLoadButtonDisabled => this.ActiveModel == null && string.IsNullOrEmpty(this.SelectedModel) && (this.Models == null || !this.Models.Any());
 
         public async Task InitializeAsync()
         {
@@ -51,6 +55,14 @@ namespace SharpTorch.WebApp.ViewModels
 
         public async Task<string?> LoadModelAsync(string? modelName = null)
         {
+            if (this.ActiveModel != null)
+            {
+                string unloadModel = this.ActiveModel.ModelName;
+                // unload the current model first
+                var unloadResult = await this.UnloadModelAsync();
+                return $"Model '{unloadModel}' was unloaded. Unload result: {unloadResult}.";
+            }
+
             var modelToLoad = modelName ?? this.SelectedModel ?? this.Models?.FirstOrDefault()?.ModelName;
             if (string.IsNullOrEmpty(modelToLoad))
             {
@@ -69,7 +81,7 @@ namespace SharpTorch.WebApp.ViewModels
             return res;
         }
 
-        public async IAsyncEnumerable<string> GenerateStreamAsync(string? prompt = null, int maxTokens = 512, CancellationToken ct = default)
+        public async IAsyncEnumerable<string> GenerateStreamAsync(string? prompt = null, int maxTokens = 512, [EnumeratorCancellation] CancellationToken ct = default)
         {
             await foreach (var chunk in this.Api.GenerateStreamAsync(prompt, maxTokens, ct))
             {

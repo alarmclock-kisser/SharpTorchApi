@@ -73,7 +73,10 @@ namespace SharpTorch.Api.Controllers
 
 
         [HttpPost("start-model")]
-        public async Task<ActionResult<string?>> StartModelAsync([FromBody] TorchModel? selectedModel = null)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [Consumes("application/json")]
+        public async Task<ActionResult<string>?> StartModelAsync([FromBody] TorchModel? selectedModel = null)
         {
             if (selectedModel == null)
             {
@@ -87,8 +90,15 @@ namespace SharpTorch.Api.Controllers
 
             try
             {
-                await this.Service.StartModelAsync(selectedModel);
-                return this.Ok(selectedModel.ModelRootPath);
+                var result = await this.Service.StartModelAsync(selectedModel);
+                if (result)
+                {
+                    return this.Ok(selectedModel.ModelName);
+                }
+                else
+                {
+                    return this.StatusCode(500, $"Failed to start the model: {selectedModel.ModelName}");
+                }
             }
             catch (Exception ex)
             {
@@ -104,8 +114,12 @@ namespace SharpTorch.Api.Controllers
                 var result = await this.Service.UnloadModelAsync();
                 if (result == null)
                 {
-                    return this.NotFound();
+                    Console.WriteLine($"UnloadModelAsync: No active model to unload.");
                 }
+
+                bool forceCpu = !this.Service.IsCuda;
+                this.Service.Dispose();
+                this.Service = new TorchService(this.Service.ModelDirectories, forceCpu);
 
                 return this.Ok(result);
             }

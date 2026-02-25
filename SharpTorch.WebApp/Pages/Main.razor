@@ -29,7 +29,7 @@
                 <RadzenPanel Style="padding:10px;">
                     <RadzenHeading Size="H3" Text="Models" />
                     <RadzenDropDown @bind-Value="Vm.SelectedModel" Data="Vm.Models" TextProperty="ModelName" ValueProperty="ModelName" Style="width:100%"/>
-                    <RadzenButton Text="Load" Click="@(async args => await Vm.LoadModelAsync(Vm.SelectedModel))" Style="margin-top:10px;" />
+                    <RadzenButton Text="@Vm.LoadButtonText" Click="@(async args => await Vm.LoadModelAsync(Vm.SelectedModel))" Disabled="@Vm.IsLoadButtonDisabled" Style="margin-top:10px;" />
                 </RadzenPanel>
             </RadzenColumn>
         </RadzenRow>

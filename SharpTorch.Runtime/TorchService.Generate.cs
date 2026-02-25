@@ -29,7 +29,7 @@ namespace SharpTorch.Runtime
             await StaticLogger.LogAsync("TorchService: Starting generation stream for prompt...");
 
             // 1. Prompt in Token-IDs umwandeln
-            var inputIds = await EncodeTextAsync(prompt);
+            var inputIds = await this.EncodeTextAsync(prompt);
 
             // Qwen Stop-Token
             long eosTokenId = 151643;
@@ -58,8 +58,10 @@ namespace SharpTorch.Runtime
                     var nextTokenTensor = lastTokenLogits.argmax();
                     nextTokenId = nextTokenTensor.item<long>();
 
-                    // Neuen Input zusammenbauen
-                    var nextTokenUnsq = torch.tensor(new[] { nextTokenId }, device: this._device).unsqueeze(0);
+                    // Neuen Input zusammenbauen. Ensure the new token tensor is created on the
+                    // same device as the existing `inputIds` to avoid device mismatches.
+                    var targetDevice = inputIds.device;
+                    var nextTokenUnsq = torch.tensor(new[] { nextTokenId }, device: targetDevice).unsqueeze(0);
                     newInputIds = torch.cat(new[] { inputIds, nextTokenUnsq }, dim: 1);
 
                     // Memory Management

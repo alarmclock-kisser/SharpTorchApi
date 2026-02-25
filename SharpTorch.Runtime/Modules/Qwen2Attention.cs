@@ -62,8 +62,8 @@ namespace SharpTorch.Runtime.Modules
 
             // --- NEU: RoPE (Positions-Wissen) anwenden! ---
             var (cos, sin) = this.rotary_emb.forward(seq_len, x.device);
-            q = ApplyRotaryPosEmb(q, cos, sin);
-            k = ApplyRotaryPosEmb(k, cos, sin);
+            q = this.ApplyRotaryPosEmb(q, cos, sin);
+            k = this.ApplyRotaryPosEmb(k, cos, sin);
             cos.Dispose();
             sin.Dispose();
             // ----------------------------------------------

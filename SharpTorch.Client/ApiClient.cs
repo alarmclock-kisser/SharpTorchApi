@@ -76,7 +76,7 @@ namespace SharpTorch.Client
                     return null;
                 }
 
-                var result = await this.Client.StartModelAsync(model);
+                string result = await this.Client.StartModelAsync(model) ?? "Failed to start model for unknown reasons.";
                 return result;
             }
             catch (Exception ex)
